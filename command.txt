@@ -1,0 +1,89 @@
+1. Install:
+
+uv init
+
+.\.venv\Scripts\Activate.ps1
+
+uv pip install paddlepaddle-gpu==3.2.2 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+
+uv pip install pyqt5
+
+uv pip install "paddleocr>=3.0.2"
+
+uv pip install openpyxl tqdm premailer pandas requests pywin32
+
+uv pip install "paddlex[ocr]==3.3.9"
+
+
+uv pip install "paddlex[ocr-core]>=3.2.0,<3.3.0" "PyYAML>=6" "typing-extensions>=4.12"
+
+uv pip install "paddlex[ie]>=3.2.0,<3.3.0"
+
+uv pip install "paddlex[trans]>=3.2.0,<3.3.0"
+
+uv pip install "scikit-image>=0.22"
+
+uv pip install albumentations
+
+uv pip install lmdb
+
+uv pip install rapidfuzz
+
+
+2. Dataset
+
+cd ./PPOCRLabel
+python gen_ocr_train_val_test.py --trainValTestRatio 6:2:2 --datasetRootPath C:\Users\11759\Desktop\test\dataset
+
+|-train_data
+  |-crop_img
+    |- word_001_crop_0.png
+    |- word_002_crop_0.jpg
+    |- word_003_crop_0.jpg
+    | ...
+  | Label.txt
+  | rec_gt.txt
+  |- word_001.png
+  |- word_002.jpg
+  |- word_003.jpg
+  | ...
+
+3. Train Text ROI
+
+python PaddleOCR/tools/train.py -c PaddleOCR/configs/det/PP-OCRv5/PP-OCRv5_server_det.yml -o Global.pretrained_model=D:/WORK/OCR/PP-OCRv5_server_det_pretrained.pdparams Train.dataset.data_dir=D:/WORK/OCR/train_data/det Train.dataset.label_file_list='[D:/WORK/OCR/train_data/det/train.txt]' Eval.dataset.data_dir=D:/WORK/OCR/train_data/det Eval.dataset.label_file_list='[D:/WORK/OCR/train_data/det/val.txt]'
+
+python PaddleOCR/tools/train.py -c PaddleOCR/configs/det/PP-OCRv5/PP-OCRv5_server_det.yml -o Global.pretrained_model=D:\WORK\OCR\PPOCRLabel\output\PP-OCRv5_server_det1\best_model\model.pdparams Train.dataset.data_dir=D:/WORK/OCR/train_data/det Train.dataset.label_file_list='[D:/WORK/OCR/train_data/det/train.txt]' Eval.dataset.data_dir=D:/WORK/OCR/train_data/det Eval.dataset.label_file_list='[D:/WORK/OCR/train_data/det/val.txt]'
+
+
+3.1 Resume Training
+
+python PaddleOCR/tools/train.py -c D:\WORK\OCR\PPOCRLabel\output\PP-OCRv5_server_det\config.yml  -o Global.checkpoints="output/PP-OCRv5_server_det/latest"
+
+3.2 Export Model
+
+python tools/export_model.py -c configs/det/PP-OCRv5/PP-OCRv5_server_det.yml -o    Global.pretrained_model=../output/PP-OCRv5_server_det/best_accuracy.pdparams    Global.save_inference_dir="./PP-OCRv5_server_det_infer/"
+
+4. Train Text Recognition
+
+.\.venv\Scripts\Activate.ps1
+cd PaddleOCR
+python tools/train.py -c configs/rec/PP-OCRv5/PP-OCRv5_server_rec.yml -o Global.pretrained_model=D:/WORK/OCR/PP-OCRv5_server_rec_pretrained.pdparams Train.dataset.data_dir=D:/WORK/OCR/train_data/rec Train.dataset.label_file_list='[D:/WORK/OCR/train_data/rec/train.txt]' Eval.dataset.data_dir=D:/WORK/OCR/train_data/rec Eval.dataset.label_file_list='[D:/WORK/OCR/train_data/rec/val.txt]'
+
+python tools/train.py -c configs/rec/PP-OCRv5/PP-OCRv5_server_rec.yml -o Global.pretrained_model=D:\WORK\OCR\PPOCRLabel\PaddleOCR\output\PP-OCRv5_server_rec1\iter_epoch_100.pdparams Train.dataset.data_dir=D:/WORK/OCR/train_data/rec Train.dataset.label_file_list='[D:/WORK/OCR/train_data/rec/train.txt]' Eval.dataset.data_dir=D:/WORK/OCR/train_data/rec Eval.dataset.label_file_list='[D:/WORK/OCR/train_data/rec/val.txt]'
+
+
+4.1 Resume Training
+
+python tools/train.py -c output/PP-OCRv5_server_rec/config.yml `
+  -o Global.checkpoints="output/PP-OCRv5_server_rec/latest"
+
+
+4.2 Export Model
+
+python tools/export_model.py -c configs/rec/PP-OCRv5/PP-OCRv5_server_rec.yml -o Global.pretrained_model=output/PP-OCRv5_server_rec/iter_epoch_75.pdparams Global.save_inference_dir="./PP-OCRv5_server_rec_infer/"
+
+4.3 eval
+
+python tools/eval.py -c output/PP-OCRv5_server_rec/config.yml -o Global.pretrained_model=output/PP-OCRv5_server_rec/iter_epoch_200.pdparams
+
+python tools/eval.py -c output/PP-OCRv5_server_rec/config.yml  -o Global.checkpoints="output/PP-OCRv5_server_rec/iter_epoch_200.pdparams"
